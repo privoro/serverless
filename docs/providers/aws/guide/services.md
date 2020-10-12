@@ -71,6 +71,7 @@ Here are the available templates for AWS Lambda:
 - aws-fsharp
 - aws-go
 - aws-go-dep
+- aws-go-mod
 
 Check out the [create command docs](../cli-reference/create) for all the details and options.
 
@@ -106,8 +107,8 @@ provider:
   runtime: nodejs12.x
   stage: dev # Set the default stage used. Default is dev
   region: us-east-1 # Overwrite the default region used. Default is us-east-1
-  stackName: my-custom-stack-name-${self:provider.stage} # Overwrite default CloudFormation stack name. Default is ${self:service}-${self:provider.stage}
-  apiName: my-custom-api-gateway-name-${self:provider.stage} # Overwrite default API Gateway name. Default is ${self:provider.stage}-${self:service}
+  stackName: my-custom-stack-name-${opt:stage, self:provider.stage, 'dev'} # Overwrite default CloudFormation stack name. Default is ${self:service}-${opt:stage, self:provider.stage, 'dev'}
+  apiName: my-custom-api-gateway-name-${opt:stage, self:provider.stage, 'dev'} # Overwrite default API Gateway name. Default is ${opt:stage, self:provider.stage, 'dev'}-${self:service}
   profile: production # The default profile to use with this service
   memorySize: 512 # Overwrite the default memory size. Default is 1024
   deploymentBucket:
@@ -227,7 +228,7 @@ To configure version pinning define a `frameworkVersion` property in your server
 ```yml
 # serverless.yml
 
-frameworkVersion: "=1.0.3"
+frameworkVersion: '2.1.0'
 
 service: users
 
@@ -244,7 +245,7 @@ provider:
 ```yml
 # serverless.yml
 
-frameworkVersion: ">=1.0.0 <2.0.0"
+frameworkVersion: "^2.1.0" # >=2.1.0 && <3.0.0
 
 service: users
 

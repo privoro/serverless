@@ -32,12 +32,9 @@ provider:
   namespace: funcions # optional, deployment namespace if not specified it uses "default"
   ingress: # optional, ingress configuration if not using nginx
     class: 'traefik' # optional, class of ingress
-    additionalAnnotations: # optional, extra annotations to put in ingress metadata
-      kubernetes.io/tls-acme: 'true'
-    tlsConfig: # optional, TLS configuration block
-      - hosts:
-          - 'example.com'
-        secretName: ingress-example-com-certs
+    hostname: 'example.com'
+    tls: true
+    tlsSecretName: ingress-example-com-certs
 
 plugins:
   - serverless-kubeless
@@ -133,7 +130,7 @@ For installing dependencies the standard dependency file should be placed in the
 - For Nodejs functions, `dependencies` in the `package.json` file will be installed
 - For Ruby functions, it will use the file `Gemfile.rb`
 
-If one of the above files is found, the depencies will be installed using a [`Init Container`](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/).
+If one of the above files is found, the dependencies will be installed using a [`Init Container`](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/).
 
 ## Environment Variables
 

@@ -36,7 +36,7 @@ provider:
 functions:
   hello:
     handler: handler.hello # required, handler set in AWS Lambda
-    name: ${self:provider.stage}-lambdaName # optional, Deployed Lambda name
+    name: ${opt:stage, self:provider.stage, 'dev'}-lambdaName # optional, Deployed Lambda name
     description: Description of what the lambda function does # optional, Description to publish to AWS
     runtime: python2.7 # optional overwrite, default is provider runtime
     memorySize: 512 # optional, in MB, default is 1024
@@ -361,6 +361,15 @@ To publish Lambda Layers, check out the [Layers](./layers.md) documentation.
 
 By default, the framework will create LogGroups for your Lambdas. This makes it easy to clean up your log groups in the case you remove your service, and make the lambda IAM permissions much more specific and secure.
 
+You can opt out of the default behavior by setting `disableLogs: true`
+
+```yml
+functions:
+  hello:
+    handler: handler.hello
+    disableLogs: true
+```
+
 ## Versioning Deployed Functions
 
 By default, the framework creates function versions for every deploy. This behavior is optional, and can be turned off in cases where you don't invoke past versions by their qualifier. If you would like to do this, you can invoke your functions as `arn:aws:lambda:....:function/myFunc:3` to invoke version 3 for example.
@@ -461,9 +470,13 @@ functions:
     tracing: PassThrough
 ```
 
-## Destinations
+## Asynchronous invocation
 
-When intention is to invoke function asynchronously you may want to configure [destination targets](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html#invocation-async-destinations) for it.
+When intention is to invoke function asynchronously you may want to configure following additional settings:
+
+### Destinations
+
+[destination targets](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html#invocation-async-destinations)
 
 Target can be the other lambdas you also deploy with a service or other qualified target (externally managed lambda, EventBridge event bus, SQS queue or SNS topic) which you can address via its ARN
 
@@ -474,4 +487,39 @@ functions:
     destinations:
       onSuccess: otherFunctionInService
       onFailure: arn:aws:sns:us-east-1:xxxx:some-topic-name
+```
+
+### Maximum Event Age and Maximum Retry Attempts
+
+`maximumEventAge` accepts values between 60 seconds and 6 hours, provided in seconds.
+`maximumRetryAttempts` accepts values between 0 and 2.
+
+```yml
+functions:
+  asyncHello:
+    handler: handler.asyncHello
+    maximumEventAge: 7200
+    maximumRetryAttempts: 1
+```
+
+## EFS Configuration
+
+You can use [Amazon EFS with Lambda](https://docs.aws.amazon.com/lambda/latest/dg/services-efs.html) by adding a `fileSystemConfig` property in the function configuration in `serverless.yml`. `fileSystemConfig` should be an object that contains the `arn` and `localMountPath` properties. The `arn` property should reference an existing EFS Access Point, where the `localMountPath` should specifiy the absolute path under which the file system will be mounted. Here's an example configuration:
+
+```yml
+# serverless.yml
+service: service-name
+provider: aws
+
+functions:
+  hello:
+    handler: handler.hello
+    fileSystemConfig:
+      localMountPath: /mnt/example
+      arn: arn:aws:elasticfilesystem:us-east-1:111111111111:access-point/fsap-0d0d0d0d0d0d0d0d0
+    vpc:
+      securityGroupIds:
+        - securityGroupId1
+      subnetIds:
+        - subnetId1
 ```

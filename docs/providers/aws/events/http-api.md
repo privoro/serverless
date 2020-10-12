@@ -14,7 +14,7 @@ layout: Doc
 
 # HTTP API
 
-HTTP APIs are a special flavored [API Gateway](https://aws.amazon.com/api-gateway/) implementation which offer more features and improved performance.
+HTTP APIs are a special flavored [API Gateway](https://aws.amazon.com/api-gateway/) implementation which offer more features and improved performance. They have some benefits and drawbacks compared to the traditional API Gateway REST APIs. Read the differences in the [AWS Documentation](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-vs-rest.html).
 
 The Serverless Framework makes it possible to setup [API Gateway](https://aws.amazon.com/api-gateway/) HTTP APIs via the `httpApi` event.
 
@@ -149,7 +149,7 @@ functions:
 
 ### Access logs
 
-Deployed stage can have acess logging enabled, for that just turn on logs for HTTP API in provider settings as follows:
+Deployed stage can have access logging enabled, for that just turn on logs for HTTP API in provider settings as follows:
 
 ```yaml
 provider:
@@ -172,7 +172,7 @@ Default logs format is:
 }
 ```
 
-It can be overriden via `format` setting:
+It can be overridden via `format` setting:
 
 ```yaml
 provider:
@@ -193,4 +193,81 @@ provider:
     id: xxxx # id of externally created HTTP API to which endpoints should be attached.
 ```
 
-In such case no API and stage resources are created, therefore extending HTTP API with CORS or access logs settings is not supported.
+You can use AWS Fn::ImportValue function as well to reference an HTTP API created within another Cloud Formation stack and whose id is exported.
+
+```yaml
+provider:
+  httpApi:
+    id:
+      Fn::ImportValue: xxxx # name of the exported value representing the external HTTP API id
+```
+
+In such case no API and stage resources are created, therefore extending HTTP API with CORS, access logs settings or authorizers is not supported.
+
+## Shared Authorizer
+
+For external HTTP API you can use shared authorizer in similar manner to RestApi. Example configuration could look like:
+
+```yml
+httpApi:
+    id: xxxx # Required
+
+functions:
+  createUser:
+     ...
+    events:
+      - httpApi:
+          path: /users
+          ...
+          authorizer:
+            # Provide authorizerId
+            id:
+              Ref: ApiGatewayAuthorizer  # or hard-code Authorizer ID
+            scopes: # Optional - List of Oauth2 scopes
+              - myapp/myscope
+
+  deleteUser:
+     ...
+    events:
+      - httpApi:
+          path: /users/{userId}
+          ...
+          authorizer:
+            # Provide authorizerId
+            id:
+              Ref: ApiGatewayAuthorizer  # or hard-code Authorizer ID
+            scopes: # Optional - List of Oauth2 scopes
+              - myapp/anotherscope
+
+resources:
+  Resources:
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGatewayV2::Authorizer
+      Properties:
+        ApiId:
+          Ref: YourApiGatewayName
+        AuthorizerType: JWT
+        IdentitySource:
+          - $request.header.Authorization
+        JwtConfiguration:
+          Audience:
+            - Ref: YourCognitoUserPoolClientName
+          Issuer:
+            Fn::Join:
+              - ""
+              - - "https://cognito-idp."
+                - "${opt:region, self:provider.region}"
+                - ".amazonaws.com/"
+                - Ref: YourCognitoUserPoolName
+```
+
+### Event / payload format
+
+HTTP API offers only a 'proxy' option for Lambda integration where an event submitted to the function contains the details of HTTP request such as headers, query string parameters etc.
+There are two formats for this event available (see [Working with AWS Lambda proxy integrations for HTTP APIs](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)), with the default being 2.0. It is possible to downgrade to 1.0 version by specifying `payload`. The payload version could be configured globally as:
+
+```yaml
+provider:
+  httpApi:
+    payload: '1.0'
+```
