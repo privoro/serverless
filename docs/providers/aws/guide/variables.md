@@ -370,6 +370,26 @@ custom:
       - false
 ```
 
+If the variable value is valid JSON but you expect the plaintext form, then you can use the extended syntax `~decryptAsPlaintext`.
+
+```
+custom:
+  supersecret: ${ssm:/aws/reference/secretsmanager/secret_ID_in_Secrets_Manager~decryptAsPlaintext}
+```
+
+variables will be resolved like
+
+```yml
+service: new-service
+provider: aws
+functions:
+  hello:
+    name: hello
+    handler: handler.hello
+custom:
+  supersecret: '{"num": 1,"str": "secret","arr": [true, false]}' # a plain text string
+```
+
 ## Reference Variables in Other Files
 
 You can reference variables in other YAML or JSON files. To reference variables in other YAML files use the `${file(./myFile.yml):someProperty}` syntax in your `serverless.yml` configuration file. To reference variables in other JSON files use the `${file(./myFile.json):someProperty}` syntax. It is important that the file you are referencing has the correct suffix, or file extension, for its file type (`.yml` for YAML or `.json` for JSON) in order for it to be interpreted correctly. Here's an example:
